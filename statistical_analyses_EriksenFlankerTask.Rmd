@@ -1,0 +1,665 @@
+---
+title: "Statistical analyses of behavioral data from the Eriksen Flanker Task"
+author: "Louise Bruland Bjerrum"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load packages
+
+```{r}
+library(tidyverse)
+library(lmerTest)
+library(merDeriv)
+library(glmmTMB)
+library(DHARMa)
+library(easystats)
+library(emmeans)
+library(ggpubr)
+```
+
+# Re-level categorical predictor prior to analyses
+
+```{r}
+Flanker_data$Light <- relevel(Flanker_data$Light, ref = "Dim")
+```
+
+# Statistical analyses of main outcomes from the Eriksen Flanker Task 
+
+## Intra-individual reaction time variability in the incompatible (conflict) flanker task condition
+
+*Fit linear mixed-effects model, check model assumptions and performance metrics* 
+
+```{r}
+set.seed(123)
+
+IIVRT_incompatible_mod <- lmer(EFT_sdRTincompatible ~ EFT_RTincompatible + Light + sdTST + (1 | Subject),
+                                     data = Flanker_data
+                                     )
+```
+
+```{r}
+performance::check_model(IIVRT_incompatible_mod)
+
+plot(DHARMa::simulateResiduals(IIVRT_incompatible_mod))
+```
+
+```{r}
+performance::model_performance(IIVRT_incompatible_mod)
+```
+
+
+*Extract results and model-based parameters* 
+
+```{r}
+summary(IIVRT_incompatible_mod)
+```
+
+```{r}
+performance::model_parameters(IIVRT_incompatible_mod)
+```
+
+
+*Calculate approximated effect sizes for all fixed effects irrespective of significance, based on test statistics (output from summary() above)*
+
+Mean RT: 
+
+```{r}
+effectsize::t_to_f2(t = 12.801, df = 107.27686, ci = 0.95, partial = TRUE)
+```
+
+
+SWL:
+
+```{r}
+effectsize::t_to_f2(t = -2.200, df = 106.29473, ci = 0.95, partial = TRUE)
+```
+
+
+LWL:
+
+```{r}
+effectsize::t_to_f2(t = -1.363, df = 106.53794, ci = 0.95, partial = TRUE)
+```
+
+
+BWL:
+
+```{r}
+effectsize::t_to_f2(t = -1.242, df = 103.52668, ci = 0.95, partial = TRUE)
+```
+
+
+Sleep variability:
+
+```{r}
+effectsize::t_to_f2(t = 1.158, df = 56.09842, ci = 0.95, partial = TRUE)
+```
+
+
+*Obtain estimated marginal means for the main effect of light* 
+
+```{r}
+emmeans_IIVRTincompatible_light <- emmeans(IIVRT_incompatible_mod, specs = ~ Light)
+emmeans_IIVRTincompatible_light_df <- summary(as.data.frame(IIVRT_incompatible_mod))
+emmeans_IIVRTincompatible_light_df
+```
+
+*Plot of estimated marginal means for the main effect of light* 
+
+```{r}
+IIVRT_incompatible_light_plot <- ggplot(emmeans_IIVRTincompatible_light_df, aes(x = Light, y = emmean, fill = Light)) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2, size = 0.7) +
+  geom_point(aes(fill = Light), size = 7, color = "black", shape = 22, stroke = 0.7, show.legend = FALSE) +
+  scale_fill_manual(values = c("dimgrey", "blue", "red", "lightblue1")) +
+  scale_x_discrete(labels = c("DL", "SWL", "LWL", "BWL")) +
+  scale_y_continuous(limits = c(105,160), breaks = seq(105, 155, by = 10)) +
+  labs(
+    x = "Light condition",
+    y = "RTV (ms) in the incompatible\nflanker condition",
+    fill = "Light"
+    ) +
+  theme_minimal() +
+  theme(aspect.ratio = 1,
+        plot.background = element_rect(fill = "white", color = NA),
+        panel.background = element_rect(fill = "white", color = NA),
+        plot.margin = margin(t = 2,
+                             r = 2,
+                             b = 2,
+                             l = 2,
+                             unit = "mm"),
+        panel.grid = element_blank(), 
+        panel.border = element_blank(),
+        text = element_text(color = "black", family = "Arial", size = 10),
+        axis.ticks = element_line(color = "black"),
+        axis.line = element_line(color = "black"),
+        axis.text.x = element_text(color = "black", family = "Arial", size = 10),
+        axis.title.x = element_text(color = "black", family = "Arial", size = 10, margin = margin(t = 3, unit = "mm")),
+        axis.title.y = element_text(color = "black", family = "Arial", size = 10, margin = margin(r = 3, unit = "mm")),
+        axis.text.y = element_text(color = "black", family = "Arial", size = 10)
+        ) +
+   geom_signif(
+    comparisons = list(c("Dim", "Blue")),
+    annotations = "*",
+    y_position = 152,
+    tip_length = 0.03
+  )
+
+IIVRT_incompatible_light_plot
+```
+
+```{r}
+ggsave("IIVRT_incompatible_light_plot.tiff",
+       plot = IIVRT_incompatible_light_plot,
+       device = "tiff",
+       width = 12,
+       height = 12,
+       units = "cm",
+       dpi = 300)
+```
+
+## Differential incompatible-compatible reaction time score ("conflict effect score")
+
+*Fit linear mixed-effects model, check model assumptions and performance metrics* 
+
+```{r}
+set.seed(123)
+
+conflict_effect_mod <- lmer(ExecutiveNetwork_score ~ Light + sdTST + (1 | Subject),
+                                      data = Flanker_data
+                                      )
+```
+
+```{r}
+performance::check_model(conflict_effect_mod)
+
+plot(DHARMa::simulateResiduals(conflict_effect_mod))
+```
+
+```{r}
+performance::model_performance(conflict_effect_mod)
+```
+
+
+*Extract results and model-based parameters* 
+
+```{r}
+summary(conflict_effect_mod)
+```
+
+```{r}
+performance::model_parameters(conflict_effect_mod)
+```
+
+
+*Calculate approximated partial Cohen's f^2 as effect size for all fixed effects irrespective of significance, based on test statistics (output from summary() above)*
+
+SWL:
+
+```{r}
+effectsize::t_to_f2(t = 0.016, df = 103.50972, ci = 0.95, partial = TRUE)
+```
+
+LWL:
+
+```{r}
+effectsize::t_to_f2(t = 0.839, df = 103.83153, ci = 0.95, partial = TRUE)
+```
+
+BWL:
+
+```{r}
+effectsize::t_to_f2(t = 0.509, df = 102.28083, ci = 0.95, partial = TRUE)
+```
+
+Sleep variability: 
+
+```{r}
+effectsize::t_to_f2(t = -0.462, df = 105.88518, ci = 0.95, partial = TRUE)
+```
+
+
+*Obtain estimated marginal means for the main effect of light* 
+
+```{r}
+emmeans_conflict_effect_light <- emmeans(conflict_effect_mod, specs = ~ Light)
+emmeans_conflict_effect_light_df <- summary(as.data.frame(conflict_effect_mod))
+emmeans_conflict_effect_light_df
+```
+
+*Plot of estimated marginal means for the main effect of light* 
+
+```{r}
+conflict_effect_light_plot <- ggplot(emmeans_conflict_effect_light_df, aes(x = Light, y = emmean, fill = Light)) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2, size = 0.7) +
+  geom_point(aes(fill = Light), size = 7, color = "black", shape = 22, stroke = 0.7, show.legend = FALSE) +
+  scale_y_continuous(limits = c(70,125), breaks = seq(70, 120, by = 10)) +
+  scale_fill_manual(values = c("dimgrey", "blue", "red", "lightblue1")) +
+  scale_x_discrete(labels = c("DL", "SWL", "LWL", "BWL")) +
+  labs(
+    x = "Light condition",
+    y = "Differential incompatible-compatible\nRT score",
+    fill = "Light"
+    ) +
+  theme_minimal() +
+  theme(aspect.ratio = 1,
+        plot.background = element_rect(fill = "white", color = NA),
+        panel.background = element_rect(fill = "white", color = NA),
+        plot.margin = margin(t = 2,
+                             r = 2,
+                             b = 2,
+                             l = 2,
+                             unit = "mm"),
+        panel.grid = element_blank(), 
+        panel.border = element_blank(),
+        text = element_text(color = "black", family = "Arial", size = 10),
+        axis.ticks = element_line(color = "black"),
+        axis.line = element_line(color = "black"),
+        axis.text.x = element_text(color = "black", family = "Arial", size = 10),
+        axis.title.x = element_text(color = "black", family = "Arial", size = 10, margin = margin(t = 3, unit = "mm")),
+        axis.title.y = element_text(color = "black", family = "Arial", size = 10, margin = margin(r = 3, unit = "mm")),
+        axis.text.y = element_text(color = "black", family = "Arial", size = 10)
+        )
+
+conflict_effect_light_plot
+```
+
+```{r}
+ggsave("conflict_effect_light_plot.tiff",
+       plot = conflict_effect_light_plot,
+       device = "tiff",
+       width = 12,
+       height = 12,
+       units = "cm",
+       dpi = 300)
+```
+
+## Intra-individual reaction time variability in the compatible (no conflict) flanker task condition 
+
+*Fit linear mixed-effects model, check model assumptions and performance metrics* 
+
+```{r}
+set.seed(123)
+
+IIVRT_compatible_mod <- lmer(EFT_sdRTcompatible ~ EFT_RTcompatible + Light + sdTST + (1 | Subject),
+                                     data = Flanker_data
+                                     )
+```
+
+```{r}
+performance::check_model(IIVRT_compatible_mod)
+
+plot(DHARMa::simulateResiduals(IIVRT_compatible_mod))
+```
+
+```{r}
+performance::model_performance(IIVRT_compatible_mod)
+```
+
+
+*Extract results and model-based parameters* 
+
+```{r}
+summary(IIVRT_compatible_mod)
+```
+
+```{r}
+performance::model_parameters(IIVRT_compatible_mod)
+```
+
+
+*Calculate approximated partial Cohen's f^2 as effect size for all fixed effects irrespective of significance, based on test statistics (output from summary() above)*
+
+Mean RT: 
+
+```{r}
+effectsize::t_to_f2(t = 12.175, df = 120.95243, ci = 0.95, partial = TRUE)
+```
+
+SWL:
+
+```{r}
+effectsize::t_to_f2(t = -0.239, df = 104.17235, ci = 0.95, partial = TRUE)
+```
+
+LWL:
+
+```{r}
+effectsize::t_to_f2(t = 0.455, df = 104.59115, ci = 0.95, partial = TRUE)
+```
+
+BWL:
+
+```{r}
+effectsize::t_to_f2(t = -0.041, df = 100.86326, ci = 0.95, partial = TRUE)
+```
+
+Sleep variability: 
+
+```{r}
+effectsize::t_to_f2(t = 0.121, df = 52.51107, ci = 0.95, partial = TRUE)
+```
+
+*Obtain estimated marginal means for the main effect of light* 
+
+```{r}
+emmeans_IIVRTcompatible_light <- emmeans(IIVRT_compatible_mod, specs = ~ Light)
+emmeans_IIVRTcompatible_light_df <- summary(as.data.frame(IIVRT_compatible_mod))
+emmeans_IIVRTcompatible_light_df
+```
+
+*Plot of estimated marginal means for the main effect of light* 
+
+```{r}
+IIVRT_compatible_light_plot <- ggplot(emmeans_IIVRTcompatible_light_df, aes(x = Light, y = emmean, fill = Light)) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.2, size = 0.7) +
+  geom_point(aes(fill = Light), size = 7, color = "black", shape = 22, stroke = 0.7, show.legend = FALSE) +
+  scale_y_continuous(limits = c(105,160), breaks = seq(105, 155, by = 10)) +
+  scale_fill_manual(values = c("dimgrey", "blue", "red", "lightblue1")) +
+  scale_x_discrete(labels = c("DL", "SWL", "LWL", "BWL")) +
+  labs(
+    x = "Light condition",
+    y = "RTV (ms) in the compatible\nflanker condition",
+    fill = "Light"
+    ) +
+  theme_minimal() +
+  theme(aspect.ratio = 1,
+        plot.background = element_rect(fill = "white", color = NA),
+        panel.background = element_rect(fill = "white", color = NA),
+        plot.margin = margin(t = 2,
+                             r = 2,
+                             b = 2,
+                             l = 2,
+                             unit = "mm"),
+        panel.grid = element_blank(), 
+        panel.border = element_blank(),
+        text = element_text(color = "black", family = "Arial", size = 10),
+        axis.ticks = element_line(color = "black"),
+        axis.line = element_line(color = "black"),
+        axis.text.x = element_text(color = "black", family = "Arial", size = 10),
+        axis.title.x = element_text(color = "black", family = "Arial", size = 10, margin = margin(t = 3, unit = "mm")),
+        axis.title.y = element_text(color = "black", family = "Arial", size = 10, margin = margin(r = 3, unit = "mm")),
+        axis.text.y = element_text(color = "black", family = "Arial", size = 10)
+        ) 
+
+IIVRT_compatible_light_plot
+```
+
+```{r}
+ggsave("IIVRT_compatible_light_plot.tiff",
+       plot = IIVRT_compatible_light_plot,
+       device = "tiff",
+       width = 12,
+       height = 12,
+       units = "cm",
+       dpi = 300)
+```
+
+# Statistical analyses of additional outcomes from the Eriksen Flanker Task 
+
+## Mean reaction time in the incompatible and compatible flanker task condition
+
+### Incompatible task condition
+
+*Fit linear mixed-effects model, check model assumptions and performance metrics* 
+
+```{r}
+set.seed(123)
+
+RT_incompatible_mod <- lmer(EFT_RTincompatible ~ Light + sdTST + (1 | Subject),
+                                     data = Flanker_data
+                                     )
+```
+
+```{r}
+performance::check_model(RT_incompatible_mod)
+
+plot(DHARMa::simulateResiduals(RT_incompatible_mod))
+```
+
+```{r}
+performance::model_performance(RT_incompatible_mod)
+```
+
+*Extract results and model-based parameters* 
+
+```{r}
+summary(RT_incompatible_mod)
+```
+
+```{r}
+performance::model_parameters(RT_incompatible_mod)
+```
+
+
+*Calculate approximated partial Cohen's f^2 as effect size for all fixed effects irrespective of significance, based on test statistics (output from summary() above)*
+
+SWL:
+
+```{r}
+effectsize::t_to_f2(t = 0.885, df = 105.2612, ci = 0.95, partial = TRUE)
+```
+
+LWL:
+
+```{r}
+effectsize::t_to_f2(t = -0.092, df = 105.5736, ci = 0.95, partial = TRUE)
+```
+
+BWL:
+
+```{r}
+effectsize::t_to_f2(t = 0.302, df = 103.8599, ci = 0.95, partial = TRUE)
+```
+
+Sleep variability: 
+
+```{r}
+effectsize::t_to_f2(t = -0.480, df =  97.7794, ci = 0.95, partial = TRUE)
+```
+
+### Compatible task condition 
+
+*Fit linear mixed-effects model, check model assumptions and performance metrics* 
+
+```{r}
+set.seed(123)
+
+RT_compatible_mod <- lmer(EFT_RTcongruent ~ Light + sdTST + (1 | Subject),
+                                     data = Flanker_data
+                                     )
+```
+
+```{r}
+performance::check_model(RT_compatible_mod)
+
+plot(DHARMa::simulateResiduals(RT_compatible_mod))
+```
+
+```{r}
+performance::model_performance(RT_compatible_mod)
+```
+
+
+*Extract results and model-based parameters* 
+
+```{r}
+summary(RT_compatible_mod)
+```
+
+```{r}
+performance::model_parameters(RT_compatible_mod)
+```
+
+
+*Calculate approximated partial Cohen's f^2 as effect size for all fixed effects irrespective of significance, based on test statistics (output from summary() above)*
+
+SWL:
+
+```{r}
+effectsize::t_to_f2(t = 1.082, df = 106.7473, ci = 0.95, partial = TRUE)
+```
+
+LWL:
+
+```{r}
+effectsize::t_to_f2(t = -0.669, df = 107.0391, ci = 0.95, partial = TRUE)
+```
+
+BWL:
+
+```{r}
+effectsize::t_to_f2(t = 0.019, df = 104.8825, ci = 0.95, partial = TRUE)
+```
+
+Sleep variability: 
+
+```{r}
+effectsize::t_to_f2(t = -0.504, df =  80.7442, ci = 0.95, partial = TRUE)
+```
+
+
+## Mean accuracy in the incompatible and compatible flanker task condition
+
+*Add a small constant to accuracy values equal to 1 so that the data can be modeled using beta regression*
+
+```{r}
+Flanker_data_accuracy <- Flanker_data_accuracy %>% 
+  mutate(
+    EFT_Accuracycompatible = ifelse(EFT_Accuracycompatible == 1, 1 - 0.00001, EFT_Accuracycompatible),
+    EFT_Accuracyincompatible = ifelse(EFT_Accuracyincompatible == 1, 1 - 0.00001, EFT_Accuracyincompatible)
+    )
+```
+
+*Re-level categorical predictor*
+
+```{r}
+Flanker_data_accuracy$Light <- relevel(Flanker_data_accuracy$Light, ref = "Dim") #re-level light so that dim is the reference level
+```
+
+### Incompatible task condition
+
+*Fit generalized linear mixed-effects model assuming with a beta distribution and logit link function, check model assumptions and performance metrics*
+
+```{r}
+set.seed(123)
+
+Accuracyincompatible_mod <- glmmTMB(EFT_Accuracyincompatible ~ Light + sdTST + (1 | Subject),
+                                             data = Flanker_data_accuracy,
+                                             family = beta_family(link = "logit")
+                                             )
+```
+
+```{r}
+performance::check_model(Accuracyincompatible_mod)
+
+plot(DHARMa::simulateResiduals(Accuracyincompatible_mod))
+```
+
+```{r}
+performance::model_performance(Accuracyincompatible_mod)
+```
+
+
+*Extract results and model-based parameters* 
+
+```{r}
+summary(Accuracyincompatible_mod)
+```
+
+```{r}
+performance::model_parameters(Accuracyincompatible_mod)
+```
+
+
+*Calculate approximated partial r as effect size for all fixed effects irrespective of significance, based on test statistics (output from summary() above)*
+
+SWL: 
+
+```{r}
+z_to_r(z = 0.616, n = 39, ci = 0.95, partial = TRUE)
+```
+
+LWL:
+
+```{r}
+z_to_r(z = -0.369, n = 39, ci = 0.95, partial = TRUE)
+```
+
+BWL:
+
+```{r}
+z_to_r(z = 0.367, n = 39, ci = 0.95, partial = TRUE)
+```
+
+Sleep variability:
+
+```{r}
+z_to_r(z = -0.269, n = 39, ci = 0.95, partial = TRUE)
+```
+
+### Compatible task condition 
+
+*Fit generalized linear mixed-effects model assuming with a beta distribution and logit link function, check model assumptions and performance metrics*
+
+```{r}
+set.seed(123)
+
+Accuracycompatible_mod <- glmmTMB(EFT_Accuracycompatible ~ Light + sdTST + (1 | Subject),
+                                             data = Flanker_data_accuracy,
+                                             family = beta_family(link = "logit")
+                                             )
+```
+
+```{r}
+performance::check_model(Accuracycompatible_mod)
+
+plot(DHARMa::simulateResiduals(Accuracycompatible_mod))
+```
+
+```{r}
+performance::model_performance(Accuracycompatible_mod)
+```
+
+
+*Extract results and model-based parameters* 
+
+```{r}
+summary(Accuracycompatible_mod)
+```
+
+```{r}
+performance::model_parameters(Accuracycompatible_mod)
+```
+
+
+*Calculate approximated partial r as effect size for all fixed effects irrespective of significance, based on test statistics (output from summary() above)*
+
+SWL: 
+
+```{r}
+z_to_r(z = 0.378, n = 39, ci = 0.95, partial = TRUE)
+```
+
+LWL:
+
+```{r}
+z_to_r(z = -0.439, n = 39, ci = 0.95, partial = TRUE)
+```
+
+BWL:
+
+```{r}
+z_to_r(z = -0.171, n = 39, ci = 0.95, partial = TRUE)
+```
+
+Sleep variability: 
+
+```{r}
+z_to_r(z = 0.881, n = 39, ci = 0.95, partial = TRUE)
+```
+

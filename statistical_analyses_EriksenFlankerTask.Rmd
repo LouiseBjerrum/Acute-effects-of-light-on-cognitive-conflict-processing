@@ -20,6 +20,7 @@ library(DHARMa)
 library(easystats)
 library(emmeans)
 library(ggpubr)
+library(extrafont)
 ```
 
 # Re-level categorical predictor prior to analyses
@@ -32,14 +33,14 @@ Flanker_data$Light <- relevel(Flanker_data$Light, ref = "Dim")
 
 ## Intra-individual reaction time variability in the incompatible (conflict) flanker task condition
 
-*Fit linear mixed-effects model, check model assumptions and performance metrics* 
+*Fit linear mixed-effects model, check model assumptions and extract performance metrics* 
 
 ```{r}
 set.seed(123)
 
 IIVRT_incompatible_mod <- lmer(EFT_sdRTincompatible ~ EFT_RTincompatible + Light + sdTST + (1 | Subject),
-                                     data = Flanker_data
-                                     )
+                               data = Flanker_data
+                               )
 ```
 
 ```{r}
@@ -52,7 +53,6 @@ plot(DHARMa::simulateResiduals(IIVRT_incompatible_mod))
 performance::model_performance(IIVRT_incompatible_mod)
 ```
 
-
 *Extract results and model-based parameters* 
 
 ```{r}
@@ -63,8 +63,7 @@ summary(IIVRT_incompatible_mod)
 performance::model_parameters(IIVRT_incompatible_mod)
 ```
 
-
-*Calculate approximated effect sizes for all fixed effects irrespective of significance, based on test statistics (output from summary() above)*
+*Calculate approximated partial Cohen's f^2 as effect size for all fixed effects irrespective of significance, based on test statistics (output from summary() above)*
 
 Mean RT: 
 
@@ -72,13 +71,11 @@ Mean RT:
 effectsize::t_to_f2(t = 12.801, df = 107.27686, ci = 0.95, partial = TRUE)
 ```
 
-
 SWL:
 
 ```{r}
 effectsize::t_to_f2(t = -2.200, df = 106.29473, ci = 0.95, partial = TRUE)
 ```
-
 
 LWL:
 
@@ -86,20 +83,17 @@ LWL:
 effectsize::t_to_f2(t = -1.363, df = 106.53794, ci = 0.95, partial = TRUE)
 ```
 
-
 BWL:
 
 ```{r}
 effectsize::t_to_f2(t = -1.242, df = 103.52668, ci = 0.95, partial = TRUE)
 ```
 
-
 Sleep variability:
 
 ```{r}
 effectsize::t_to_f2(t = 1.158, df = 56.09842, ci = 0.95, partial = TRUE)
 ```
-
 
 *Obtain estimated marginal means for the main effect of light* 
 
@@ -164,14 +158,14 @@ ggsave("IIVRT_incompatible_light_plot.tiff",
 
 ## Differential incompatible-compatible reaction time score ("conflict effect score")
 
-*Fit linear mixed-effects model, check model assumptions and performance metrics* 
+*Fit linear mixed-effects model, check model assumptions and extract performance metrics* 
 
 ```{r}
 set.seed(123)
 
 conflict_effect_mod <- lmer(ExecutiveNetwork_score ~ Light + sdTST + (1 | Subject),
-                                      data = Flanker_data
-                                      )
+                            data = Flanker_data
+                            )
 ```
 
 ```{r}
@@ -184,7 +178,6 @@ plot(DHARMa::simulateResiduals(conflict_effect_mod))
 performance::model_performance(conflict_effect_mod)
 ```
 
-
 *Extract results and model-based parameters* 
 
 ```{r}
@@ -194,7 +187,6 @@ summary(conflict_effect_mod)
 ```{r}
 performance::model_parameters(conflict_effect_mod)
 ```
-
 
 *Calculate approximated partial Cohen's f^2 as effect size for all fixed effects irrespective of significance, based on test statistics (output from summary() above)*
 
@@ -221,7 +213,6 @@ Sleep variability:
 ```{r}
 effectsize::t_to_f2(t = -0.462, df = 105.88518, ci = 0.95, partial = TRUE)
 ```
-
 
 *Obtain estimated marginal means for the main effect of light* 
 
@@ -280,14 +271,14 @@ ggsave("conflict_effect_light_plot.tiff",
 
 ## Intra-individual reaction time variability in the compatible (no conflict) flanker task condition 
 
-*Fit linear mixed-effects model, check model assumptions and performance metrics* 
+*Fit linear mixed-effects model, check model assumptions and extract performance metrics* 
 
 ```{r}
 set.seed(123)
 
 IIVRT_compatible_mod <- lmer(EFT_sdRTcompatible ~ EFT_RTcompatible + Light + sdTST + (1 | Subject),
-                                     data = Flanker_data
-                                     )
+                             data = Flanker_data
+                             )
 ```
 
 ```{r}
@@ -300,7 +291,6 @@ plot(DHARMa::simulateResiduals(IIVRT_compatible_mod))
 performance::model_performance(IIVRT_compatible_mod)
 ```
 
-
 *Extract results and model-based parameters* 
 
 ```{r}
@@ -310,7 +300,6 @@ summary(IIVRT_compatible_mod)
 ```{r}
 performance::model_parameters(IIVRT_compatible_mod)
 ```
-
 
 *Calculate approximated partial Cohen's f^2 as effect size for all fixed effects irrespective of significance, based on test statistics (output from summary() above)*
 
@@ -405,14 +394,14 @@ ggsave("IIVRT_compatible_light_plot.tiff",
 
 ### Incompatible task condition
 
-*Fit linear mixed-effects model, check model assumptions and performance metrics* 
+*Fit linear mixed-effects model, check model assumptions and extract performance metrics* 
 
 ```{r}
 set.seed(123)
 
 RT_incompatible_mod <- lmer(EFT_RTincompatible ~ Light + sdTST + (1 | Subject),
-                                     data = Flanker_data
-                                     )
+                            data = Flanker_data
+                            )
 ```
 
 ```{r}
@@ -434,7 +423,6 @@ summary(RT_incompatible_mod)
 ```{r}
 performance::model_parameters(RT_incompatible_mod)
 ```
-
 
 *Calculate approximated partial Cohen's f^2 as effect size for all fixed effects irrespective of significance, based on test statistics (output from summary() above)*
 
@@ -464,14 +452,14 @@ effectsize::t_to_f2(t = -0.480, df =  97.7794, ci = 0.95, partial = TRUE)
 
 ### Compatible task condition 
 
-*Fit linear mixed-effects model, check model assumptions and performance metrics* 
+*Fit linear mixed-effects model, check model assumptions and extract performance metrics* 
 
 ```{r}
 set.seed(123)
 
 RT_compatible_mod <- lmer(EFT_RTcongruent ~ Light + sdTST + (1 | Subject),
-                                     data = Flanker_data
-                                     )
+                          data = Flanker_data
+                          )
 ```
 
 ```{r}
@@ -484,7 +472,6 @@ plot(DHARMa::simulateResiduals(RT_compatible_mod))
 performance::model_performance(RT_compatible_mod)
 ```
 
-
 *Extract results and model-based parameters* 
 
 ```{r}
@@ -494,7 +481,6 @@ summary(RT_compatible_mod)
 ```{r}
 performance::model_parameters(RT_compatible_mod)
 ```
-
 
 *Calculate approximated partial Cohen's f^2 as effect size for all fixed effects irrespective of significance, based on test statistics (output from summary() above)*
 
@@ -522,7 +508,6 @@ Sleep variability:
 effectsize::t_to_f2(t = -0.504, df =  80.7442, ci = 0.95, partial = TRUE)
 ```
 
-
 ## Mean accuracy in the incompatible and compatible flanker task condition
 
 *Add a small constant to accuracy values equal to 1 so that the data can be modeled using beta regression*
@@ -543,15 +528,15 @@ Flanker_data_accuracy$Light <- relevel(Flanker_data_accuracy$Light, ref = "Dim")
 
 ### Incompatible task condition
 
-*Fit generalized linear mixed-effects model assuming with a beta distribution and logit link function, check model assumptions and performance metrics*
+*Fit generalized linear mixed-effects model assuming with a beta distribution and logit link function, check model assumptions and extract performance metrics*
 
 ```{r}
 set.seed(123)
 
 Accuracyincompatible_mod <- glmmTMB(EFT_Accuracyincompatible ~ Light + sdTST + (1 | Subject),
-                                             data = Flanker_data_accuracy,
-                                             family = beta_family(link = "logit")
-                                             )
+                                    data = Flanker_data_accuracy,
+                                    family = beta_family(link = "logit")
+                                    )
 ```
 
 ```{r}
@@ -564,7 +549,6 @@ plot(DHARMa::simulateResiduals(Accuracyincompatible_mod))
 performance::model_performance(Accuracyincompatible_mod)
 ```
 
-
 *Extract results and model-based parameters* 
 
 ```{r}
@@ -574,7 +558,6 @@ summary(Accuracyincompatible_mod)
 ```{r}
 performance::model_parameters(Accuracyincompatible_mod)
 ```
-
 
 *Calculate approximated partial r as effect size for all fixed effects irrespective of significance, based on test statistics (output from summary() above)*
 
@@ -604,15 +587,15 @@ z_to_r(z = -0.269, n = 39, ci = 0.95, partial = TRUE)
 
 ### Compatible task condition 
 
-*Fit generalized linear mixed-effects model assuming with a beta distribution and logit link function, check model assumptions and performance metrics*
+*Fit generalized linear mixed-effects model assuming with a beta distribution and logit link function, check model assumptions and extract performance metrics*
 
 ```{r}
 set.seed(123)
 
 Accuracycompatible_mod <- glmmTMB(EFT_Accuracycompatible ~ Light + sdTST + (1 | Subject),
-                                             data = Flanker_data_accuracy,
-                                             family = beta_family(link = "logit")
-                                             )
+                                  data = Flanker_data_accuracy,
+                                  family = beta_family(link = "logit")
+                                  )
 ```
 
 ```{r}
@@ -625,7 +608,6 @@ plot(DHARMa::simulateResiduals(Accuracycompatible_mod))
 performance::model_performance(Accuracycompatible_mod)
 ```
 
-
 *Extract results and model-based parameters* 
 
 ```{r}
@@ -635,7 +617,6 @@ summary(Accuracycompatible_mod)
 ```{r}
 performance::model_parameters(Accuracycompatible_mod)
 ```
-
 
 *Calculate approximated partial r as effect size for all fixed effects irrespective of significance, based on test statistics (output from summary() above)*
 
@@ -662,4 +643,3 @@ Sleep variability:
 ```{r}
 z_to_r(z = 0.881, n = 39, ci = 0.95, partial = TRUE)
 ```
-

@@ -4,7 +4,7 @@ This repository contains data (**EFT_dataset.csv**) and analysis code (**statist
 ### Dataset
 The dataset (**EFT_dataset.csv**, N = 40) is licensed under [CC-BY-NC-4.0](https://creativecommons.org/licenses/by-nc/4.0/) and contains the folllowing variables (from left to right): 
 - Subject [*integer*]: pseudonymized random four-digit identifier
-- Light [*factor*]: the experimental manipulation, a categorical variable with four levels: DL (= 'dim light', the control condition), SWL (short-wavelength light), LWL (long-wavelength light) and BWL (bright white light)
+- Light [*factor*]: the experimental manipulation, a categorical variable with four levels: DL (white dim light), SWL (short-wavelength light), LWL (long-wavelength light), BWL (bright white light)
 - Temperature [*numeric*]: temperature (in celcius degreees) measured in each test session
 - RT_compatible [*numeric*]: mean reaction time (RT, in ms) in the compatible flanker task condition
 - IIV_RT_compatible [*numeric*]: intra-individual variability in RT in the compatible flanker task condition, quantified as the standard deviation in RT (in ms)

@@ -24,6 +24,11 @@ library(ggsignif)
 library(extrafont)
 ```
 
+# Session info and loaded package versions 
+
+```{r session-info, echo = FALSE}
+sessionInfo()
+```
 
 # Import aggregated dataset
 
@@ -668,3 +673,4 @@ Intra-individual sleep variability:
 ```{r}
 z_to_r(z = 0.881, n = 39, ci = 0.95, partial = TRUE)
 ```
+

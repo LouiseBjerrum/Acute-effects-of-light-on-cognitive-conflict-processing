@@ -30,6 +30,7 @@ library(extrafont)
 sessionInfo()
 ```
 
+
 # Import aggregated dataset
 
 ```{r}
@@ -194,9 +195,36 @@ ggsave("IIVRT_incompatible_light_plot.tiff",
        width = 12,
        height = 12,
        units = "cm",
-       dpi = 300)
+       dpi = 600)
 ```
 
+*compute Pearson's correlation between intra-individual variability in RT and mean RT*
+
+```{r}
+Flanker_data_Pearsons <- Flanker_data %>% 
+  select(IIV_RT_incompatible, RT_incompatible) %>% 
+  na.omit() 
+```
+
+```{r}
+cor_test(Flanker_data_Pearsons,
+         "IIV_RT_incompatible", "RT_incompatible",
+         method = "pearson")
+```
+
+*Compute Spearman's rank correlation between intra-individual variability in RT and intra-individual variability in TST*
+
+```{r}
+Flanker_data_Spearmans <- Flanker_data %>% 
+  select(IIV_RT_incompatible, IIV_TST) %>% 
+  na.omit() 
+```
+
+```{r}
+cor_test(Flanker_data_Spearmans,
+         "IIV_RT_incompatible","IIV_TST",
+         method = "spearman")
+```
 
 ## Differential incompatible-compatible reaction time score ("conflict effect score")
 
@@ -308,9 +336,22 @@ ggsave("conflict_effect_light_plot.tiff",
        width = 12,
        height = 12,
        units = "cm",
-       dpi = 300)
+       dpi = 600)
 ```
 
+*Compute Spearman's rank correlation between intra-individual variability in RT and intra-individual variability in TST*
+
+```{r}
+Flanker_data_Spearmans <- Flanker_data %>% 
+  select(Conflict_effect_score, IIV_TST) %>% 
+  na.omit() 
+```
+
+```{r}
+cor_test(Flanker_data_Spearmans,
+         "Conflict_effect_score","IIV_TST",
+         method = "spearman")
+```
 
 ## Intra-individual reaction time variability in the compatible (no conflict) flanker task condition 
 
@@ -428,9 +469,36 @@ ggsave("IIVRT_compatible_light_plot.tiff",
        width = 12,
        height = 12,
        units = "cm",
-       dpi = 300)
+       dpi = 600)
 ```
 
+*compute Pearson's correlation between intra-individual variability in RT and mean RT*
+
+```{r}
+Flanker_data_Pearsons <- Flanker_data %>% 
+  select(IIV_RT_compatible, RT_compatible) %>% 
+  na.omit() 
+```
+
+```{r}
+cor_test(Flanker_data_Pearsons,
+         "IIV_RT_compatible", "RT_compatible",
+         method = "pearson")
+```
+
+*Compute Spearman's rank correlation between intra-individual variability in RT and intra-individual variability in TST*
+
+```{r}
+Flanker_data_Spearmans <- Flanker_data %>% 
+  select(IIV_RT_compatible, IIV_TST) %>% 
+  na.omit() 
+```
+
+```{r}
+cor_test(Flanker_data_Spearmans,
+         "IIV_RT_compatible","IIV_TST",
+         method = "spearman")
+```
 
 # Statistical analyses of additional outcomes from the Eriksen Flanker Task 
 
@@ -494,6 +562,19 @@ Intra-individual sleep variability:
 effectsize::t_to_f2(t = -0.480, df =  97.7794, ci = 0.95, partial = TRUE)
 ```
 
+*Compute Spearman's rank correlation between mean RT and intra-individual variability in TST*
+
+```{r}
+Flanker_data_Spearmans <- Flanker_data %>% 
+  select(RT_incompatible, IIV_TST) %>% 
+  na.omit() 
+```
+
+```{r}
+cor_test(Flanker_data_Spearmans,
+         "RT_incompatible","IIV_TST",
+         method = "spearman")
+```
 
 ### Compatible task condition 
 
@@ -553,6 +634,19 @@ Intra-individual sleep variability:
 effectsize::t_to_f2(t = -0.504, df =  80.7442, ci = 0.95, partial = TRUE)
 ```
 
+*Compute Spearman's rank correlation between mean RT and intra-individual variability in TST*
+
+```{r}
+Flanker_data_Spearmans <- Flanker_data %>% 
+  select(RT_compatible, IIV_TST) %>% 
+  na.omit() 
+```
+
+```{r}
+cor_test(Flanker_data_Spearmans,
+         "RT_compatible","IIV_TST",
+         method = "spearman")
+```
 
 ## Mean accuracy in the incompatible and compatible flanker task condition
 
@@ -620,6 +714,19 @@ Intra-individual sleep variability:
 z_to_r(z = -0.269, n = 39, ci = 0.95, partial = TRUE)
 ```
 
+*Compute Spearman's rank correlation between mean accuracy and intra-individual variability in TST*
+
+```{r}
+Flanker_data_Spearmans <- Flanker_data %>% 
+  select(Accuracy_incompatible, IIV_TST) %>% 
+  na.omit() 
+```
+
+```{r}
+cor_test(Flanker_data_Spearmans,
+         "Accuracy_incompatible","IIV_TST",
+         method = "spearman")
+```
 
 ### Compatible task condition 
 
@@ -674,4 +781,16 @@ Intra-individual sleep variability:
 z_to_r(z = 0.881, n = 39, ci = 0.95, partial = TRUE)
 ```
 
+*Compute Spearman's rank correlation between mean accuracy and intra-individual variability in TST*
 
+```{r}
+Flanker_data_Spearmans <- Flanker_data %>% 
+  select(Accuracy_compatible, IIV_TST) %>% 
+  na.omit() 
+```
+
+```{r}
+cor_test(Flanker_data_Spearmans,
+         "Accuracy_compatible","IIV_TST",
+         method = "spearman")
+```

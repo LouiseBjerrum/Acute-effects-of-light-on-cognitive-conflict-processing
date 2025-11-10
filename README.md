@@ -24,4 +24,4 @@ The .Rmd file (**statistical_analyses_EriksenFlankerTask.Rmd**) in this reposito
 - Mean accuracy in the compatible flanker task condition
 All outcomes were analyzed with mixed models in R. 
 ## Contact
-Please contact the first author at louise.bjerrum@uib.no for any questions regarding dataset or code.
+Please contact the first author at louise.bjerrum92@gmail.com for any questions regarding dataset or code.

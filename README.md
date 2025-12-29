@@ -1,27 +1,23 @@
-# Acute effects of light on cognitive conflict processing 
-This repository contains data (**EFT_dataset.csv**) and analysis code (**statistical_analyses_EriksenFlankerTask.Rmd**) associated with the scientific paper "Exposure to short-wavelength light during daytime improves the consistency in cognitive control in healthy young adults" (Bjerrum et al., submitted). 
+# Acute effects of artificial light on cognitive conflict processing 
+This repository contains data (**EFT_dataset.csv**) and analysis code (**statistical_analyses_EFT.Rmd**) associated with a scientific paper (Bjerrum et al., submitted) exploring the acute effects of exposure to artifiical light on measures of cognitive control derived from an arrow version of the Eriksen Flanker Task. Spectral irradiance in each light condition (**spectral_irradiance_rawdata.csv**) was measured at eye level.
 ## Description and licensing 
 ### Dataset
-The dataset (**EFT_dataset.csv**, N = 40) is licensed under [CC-BY-NC-4.0](https://creativecommons.org/licenses/by-nc/4.0/) and contains the folllowing variables (from left to right): 
+The primary imputed dataset (**EFT_dataset.csv**) as well as the dataset used for sensitivity "complet-case" analyses (imputed covariates, non-imputed outcomes, i.e., with "NA" inserted for missing observations) are licensed under [CC-BY-NC-4.0](https://creativecommons.org/licenses/by-nc/4.0/). The datasets contain the folllowing variables (from left to right): 
 - Subject [*integer*]: pseudonymized random four-digit identifier
 - Light [*factor*]: the experimental manipulation, a categorical variable with four levels: DL (white dim light), SWL (short-wavelength light), LWL (long-wavelength light), BWL (bright white light)
-- Temperature [*numeric*]: temperature (in celcius degreees) measured in each test session
-- RT_compatible [*numeric*]: mean reaction time (RT, in ms) in the compatible flanker task condition
-- IIV_RT_compatible [*numeric*]: intra-individual variability in RT in the compatible flanker task condition, quantified as the standard deviation in RT (in ms)
-- RT_incompatible [*numeric*]: mean RT (in ms) in the incompatible flanker task condition
-- IIV_RT_incompatible [*numeric*]: intra-individual variability in RT in the incompatible flanker task condition, quantified as the standard deviation in RT (in ms)
+- TST_IIV [*numeric*]: intra-individual variability in total sleep time (in minutes), quantified as the standard deviation in total sleep time across a period of 10 days during data collection
+- TST_mean [*numeric*]: mean total sleep time (in minutes) across a period of 10 days during data collection
+- Chronotype_rMEQ [*factor*]: chronotype (measured with a reduced version of the Morningness-Eveningness Questionnaire), categorical variable with three levels: eveningness, intermediate, morningness 
+- MeanRT_compatible [*numeric*]: mean reaction time (RT, in ms) in the compatible flanker task condition
+- IIVRT_compatible [*numeric*]: intra-individual variability in RT in the compatible flanker task condition, quantified as the standard deviation in RT (in ms)
+- MeanRT_incompatible [*numeric*]: mean RT (in ms) in the incompatible flanker task condition
+- IIVRT_incompatible [*numeric*]: intra-individual variability in RT in the incompatible flanker task condition, quantified as the standard deviation in RT (in ms)
+- IICV_compatible [*numeric*]: intra-individual coefficient of variability in RT in the compatible flanker task condition, quantified as the standard deviation in RT divided by mean RT
+- IICV_incompatible [*numeric*]: intra-individual coefficient of variability in RT in the incompatible flanker task condition, quantified as the standard deviation in RT divided by mean RT 
+- Conflict_effect_score: [*numeric*]: the RT in the incompatible flanker task condition minus RT in the compatible flanker task condition (RTincompatible - RTcompatible)
 - Accuracy_compatible [*numeric*]: mean accuracy (proportion) in the compatible flanker task condition
 - Accuracy_incompatible [*numeric*]: mean accuracy (proportion) in the incompatible flanker task condition
-- Conflict_effect_score: [*numeric*]: calculated as the RT in the incompatible flanker task condition minus RT in the compatible flanker task condition (RTincompatible - RTcompatible)
 ### Analysis script 
-The .Rmd file (**statistical_analyses_EriksenFlankerTask.Rmd**) in this repository is licensed under [MIT License](https://choosealicense.com/licenses/mit/) and contains statistical analysis code for the following outcome measures (aggregated data) from the Eriksen Flanker Task: 
-- Intra-individual reaction time variability in the incompatible (conflict) flanker task condition
-- Intra-individual reaction time variability in the compatible (no conflict) flanker task condition
-- Differential incompatible-compatible RT scores (also referred to as "conflict effect scores")
-- Mean RT in the incompatible flanker task condition
-- Mean RT in the compatible flanker task condition
-- Mean accuracy in the incompatible flanker task condition
-- Mean accuracy in the compatible flanker task condition
-All outcomes were analyzed with mixed models in R. 
+The .Rmd file (**statistical_analyses_EFT.Rmd**) in this repository is licensed under [MIT License](https://choosealicense.com/licenses/mit/) documents the statistical analysis of the aggregated outcome measures from the flanker task. All outcomes were analyzed with mixed models in R. The .html file (**statistical_analyses_EFT.html**) is the resulting output from the knitted .Rmd file. 
 ## Contact
 Please contact the first author at louise.bjerrum92@gmail.com for any questions regarding dataset or code.

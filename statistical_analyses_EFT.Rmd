@@ -1,0 +1,1151 @@
+---
+title: "Statistical analyses of behavioral data from the Eriksen Flanker Task"
+subtitle: "Supplement: analysis documentation"
+author:
+  - name: "Louise Bruland Bjerrum"
+    affiliation: "University of Bergen"
+    email: "louise.bjerrum92@gmail.com"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    number_sections: true
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    toc_depth: 4
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(include = TRUE, echo = FALSE, eval = TRUE, message = FALSE, warning = FALSE)
+source("plot_theme_functions.R") # load script with functions containing ggplot theme configurations 
+```
+
+```{r, include = FALSE}
+library(tidyverse)
+library(robustlmm)
+library(glmmTMB)
+library(GLMMadaptive)
+library(DHARMa) 
+library(performance)
+library(parameters)
+library(correlation)
+library(effectsize)
+library(emmeans)
+library(ggpubr)
+library(ggsignif)
+```
+
+This report was generated with `r R.version.string` and the following package versions:
+
+ * tidyverse `r packageVersion("tidyverse")`
+ * robustlmm `r packageVersion("robustlmm")`
+ * glmmTMB `r packageVersion("glmmTMB")`
+ * GLMMadaptive `r packageVersion("GLMMadaptive")`
+ * DHARMa `r packageVersion("DHARMa")`
+ * performance `r packageVersion("performance")`
+ * parameters `r packageVersion("parameters")`
+ * correlation `r packageVersion("correlation")`
+ * effectsize `r packageVersion("effectsize")`
+ * emmeans `r packageVersion("emmeans")`
+ * pubr `r packageVersion("ggpubr")`
+ * ggsignif `r packageVersion("ggsignif")`
+
+```{r, echo = TRUE}
+set.seed(123) # set random seed for reproducibility (this is the same seed used in analyses in other work packages related to the overarching project 
+```
+
+```{r}
+options(scipen = 999) # prevent numbers from printing in scientific notation
+```
+
+```{r, echo = TRUE, message = FALSE}
+Flanker_data <- read_csv("EFT_dataset.csv", show_col_types = FALSE) %>% # import dataset containing imputed covariates (10% missing) and outcomes (<3% of observations missing)
+  select(-1) %>% 
+  mutate(across(c(Subject, Light, Chronotype_rMEQ), factor)) %>%  # convert character variables ad Subject to factors 
+  mutate(Light = fct_relevel(Light, "DL", "SWL", "LWL", "BWL"), # make dim light the reference level
+         Chronotype_rMEQ = fct_relevel(Chronotype_rMEQ, "Intermediate") # make intermediate chronotype the reference revel as this level is a natural "midpoint" and also the level with most observations
+         )
+```
+
+```{r, echo = TRUE, message = FALSE}
+Flanker_data_cc <- read_csv("EFT_dataset_sensitivityanalyses.csv", show_col_types = FALSE) %>% # import dataset containing imputed covariates (10% missing) but incomplete outcomes (with NAs (i.e., prior to imputation), < 3 %) to be used in sensitivity analyses of imputed outcomes ("complete-case" analyses)
+  select(-1) %>% 
+  mutate(across(c(Subject, Light, Chronotype_rMEQ), factor)) %>%  # convert character variables and Subject to factors 
+  mutate(Light = fct_relevel(Light, "DL", "SWL", "LWL", "BWL"), # make dim light the reference level
+         Chronotype_rMEQ = fct_relevel(Chronotype_rMEQ, "Intermediate") # make intermediate chronotype the reference revel as this level is a natural "midpoint" and also the level with most observations
+         )
+```
+
+# Statistical analyses of main outcomes from the Eriksen Flanker Task 
+
+## Intra-individual reaction time variability in the incompatible (conflict) task condition
+
+<br />
+**Model specification** 
+
+```{r, echo = TRUE}
+IIVRT_incompatible_mod <- robustlmm::rlmer(IIVRT_incompatible ~ MeanRT_incompatible + Light + TST_IIV + TST_mean + (1 | Subject), data = Flanker_data) # fit robust linear mixed-effects model
+```
+<br />
+
+**Model performance** 
+
+```{r}
+performance::model_performance(IIVRT_incompatible_mod) %>%  # extract model performance metrics
+  kableExtra::kable() 
+```
+<br />
+
+**Model parameters** 
+
+```{r}
+IIVRT_incompatible_mod_params <- parameters::model_parameters(IIVRT_incompatible_mod) # obtain clean model parameters
+```
+
+```{r}
+parameters::print_html(IIVRT_incompatible_mod_params, include_reference = FALSE, caption = "Robust linear mixed-effects model estimates from analysis of intra-individual reaction time variability in the incompatible flanker task condition", footer = "Note. The model was fitted using restricted maximum likelihood estimation. N observations = 144. Intra-individual reaction time variability was quantified as the intra-individual standard deviation in reaction time. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. RT = reaction time. SE = standard error. SWL = short-wavelength light. TST IIV = Intra-individual variability in total sleep time. TST mean = mean total sleep time.", align = "left")
+```
+<br />
+
+**Approximated effect sizes**
+
+```{r}
+effectsize::cohens_f_squared(
+  IIVRT_incompatible_mod_params,
+  partial = TRUE,
+  generalized = FALSE,
+  squared = TRUE,
+  ci = 0.95,
+  alternative = "two.sided",
+  verbose = FALSE
+  ) %>% 
+  interpret(rules = "cohen1992") %>% 
+  kableExtra::kable()
+```
+<br />
+
+**Partial correlations**
+
+```{r}
+Flanker_data %>% 
+  select(IIVRT_incompatible, MeanRT_incompatible) %>% 
+  correlation::cor_test("IIVRT_incompatible", "MeanRT_incompatible",
+                        partial = TRUE,
+                        missing = "keep.pairwise",
+                        method = "pearson")
+```
+
+```{r}
+Flanker_data %>% 
+  select(IIVRT_incompatible, TST_IIV) %>% 
+  correlation::cor_test("IIVRT_incompatible", "TST_IIV",
+                        partial = TRUE,
+                        missing = "keep.pairwise",
+                        method = "Spearman")
+```
+<br />
+
+**Estimated marginal means for the main effect of light** 
+
+```{r}
+emmeans_IIVRT_incompatible_light <- emmeans::emmeans(IIVRT_incompatible_mod, specs = ~ Light)
+emmeans_IIVRT_incompatible_light_df <- as.data.frame(emmeans_IIVRT_incompatible_light)
+emmeans_IIVRT_incompatible_light_df %>% kableExtra::kable()
+```
+<br />
+
+```{r, fig.align = 'left'}
+ggplot(emmeans_IIVRT_incompatible_light_df, aes(x = Light, y = emmean, fill = Light)) +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, linewidth = 0.5) +
+  geom_point(aes(fill = Light), size = 4, color = "black", shape = 22, stroke = 0.5, show.legend = FALSE) +
+  scale_fill_manual(values = c("dimgrey", "blue", "red", "lightblue1")) +
+  scale_y_continuous(limits = c(105,160), breaks = seq(105, 155, by = 10)) +
+  labs(
+    title = "The acute effect of light on intra-individual reaction time variability\nin the incompatible flanker task condition",
+    x = "Light condition",
+    y = "RTV (ms) in the incompatible\nflanker condition",
+    fill = "",
+    caption = "Model-based estimated marginal means for the main effect of light, with error bars\nrepresenting the 95% confidence interval. Intra-individual reaction time variability\n(RTV) was quantified as the standard deviation (SD) in RT on incompatible trials.\n*p < 0.05 (uncorrected). Abbreviations: BWL = bright white light. LWL = long-\nwavelength light. ms = milliseconds. SWL = short-wavelength light."
+    ) +
+  plot_theme_function_1() + # apply custom theme function 
+  geom_signif(
+    comparisons = list(c("DL", "SWL")),
+    annotations = "*",
+    y_position = 150,
+    tip_length = 0.03
+  )
+```
+
+```{r, eval = FALSE}
+IIVRT_incompatible_light_plot_publication <- ggplot(emmeans_IIVRT_incompatible_light_df, aes(x = Light, y = emmean, fill = Light)) + # plot for use in the manuscript file
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, linewidth = 0.5) +
+  geom_point(aes(fill = Light), size = 4, color = "black", shape = 22, stroke = 0.5, show.legend = FALSE) +
+  scale_fill_manual(values = c("dimgrey", "blue", "red", "lightblue1")) +
+  scale_y_continuous(limits = c(105,160), breaks = seq(105, 155, by = 10)) +
+  labs(
+    x = "Light condition",
+    y = "RTV (ms) in the incompatible\nflanker condition",
+    fill = ""
+    ) +
+  plot_theme_function_2() +
+  geom_signif(
+    comparisons = list(c("DL", "SWL")),
+    annotations = "*",
+    y_position = 150,
+    tip_length = 0.03
+  )
+
+IIVRT_incompatible_light_plot_publication
+```
+
+```{r, eval = FALSE}
+ggsave("IIVRT_incompatible_light_plot.tiff",
+       plot = IIVRT_incompatible_light_plot_publication,
+       device = "tiff",
+       width = 12,
+       height = 12,
+       units = "cm",
+       dpi = 600)
+```
+<br />
+
+### Robustness checks and follow-up exploratory analyses
+
+#### Sensitivity analysis of imputed values in outcome variable ("complete-case" analysis)
+
+<br />
+**Model specification** 
+
+```{r, echo = TRUE}
+IIVRT_incompatible_mod_cc <- robustlmm::rlmer(IIVRT_incompatible ~ MeanRT_incompatible + Light + TST_IIV + TST_mean + (1 | Subject), data = Flanker_data_cc) # fit robust linear mixed-effects model
+```
+<br />
+
+**Model performance** 
+
+```{r}
+performance::model_performance(IIVRT_incompatible_mod_cc) %>% # extract model performance metrics
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters**
+
+```{r}
+IIVRT_incompatible_mod_cc_params <- parameters::model_parameters(IIVRT_incompatible_mod_cc) # obtain clean model parameters 
+```
+
+```{r}
+parameters::print_html(IIVRT_incompatible_mod_cc_params, include_reference = FALSE, caption = "Robust linear mixed-effects model estimates from complete-case analysis of intra-individual reaction time variability in the incompatible flanker task condition",footer = "Note. The model was fitted using restricted maximum likelihood. N observations = 142. Intra-individual reaction time variability was quantified as the intra-individual standard deviation in reaction time. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. RT = reaction time. SE = standard error. SWL = short-wavelength light. TST IIV = Intra-individual variability in total sleep time. TSTmean = mean total sleep time.", align = "left")
+```
+<br />
+
+#### Moderating effect of chronotype 
+
+<br />
+**Model specification** 
+
+```{r, echo = TRUE}
+IIVRT_incompatible_mod_chronotype <- robustlmm::rlmer(IIVRT_incompatible ~ MeanRT_incompatible + Light*Chronotype_rMEQ + TST_IIV + TST_mean + (1 | Subject), data = Flanker_data) # fit robust linear mixed-effects model with light and chronotype in an interaction term 
+```
+<br />
+
+**Model performance** 
+
+```{r}
+performance::model_performance(IIVRT_incompatible_mod_chronotype) %>% # extract model performance metrics 
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters** 
+
+```{r}
+parameters::model_parameters(IIVRT_incompatible_mod_chronotype) %>% # obtain clean model parameters
+  parameters::print_html(include_reference = FALSE, caption = "Robust linear mixed-effects model estimates from exploratory analysis of intra-individual reaction time variability in the incompatible flanker task condition", footer = "Note. The model was fitted using restricted maximum likelihood. N observations = 144. Intra-individual reaction time variability was quantified as the intra-individual standard deviation in reaction time. Chronotype was measured with a reduced version of the Morningness-Eveningness Questionnaire (rMEQ). Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. RT = reaction time. SE = standard error. SWL = short-wavelength light. TST IIV = Intra-individual variability in total sleep time. TSTmean = mean total sleep time.", align = "left")
+```
+<br />
+
+#### Corrected p-values for the main effect of light on RTV (SD i RT on incompatible trials)
+
+<br />
+```{r}
+pairwise_IIVRT_incompatible_light_posthoc <- pairs(emmeans_IIVRT_incompatible_light, adjust = "holm") # adjust p-values using Holm's correction 
+pairwise_IIVRT_incompatible_light_posthoc_df <- as.data.frame(pairwise_IIVRT_incompatible_light_posthoc)
+pairwise_IIVRT_incompatible_light_posthoc_df %>% kableExtra::kable()
+```
+<br />
+
+#### The intra-individual coefficient of variability
+
+The intra-individual coefficient of variability is given as:
+$$
+RTsd
+\over
+RTmean 
+$$
+**Model specification** 
+
+```{r, echo = TRUE}
+IICV_incompatible_mod <- robustlmm::rlmer(IICV_incompatible ~ Light + TST_IIV + TST_mean + (1 | Subject), data = Flanker_data) # fit robust linear mixed-effects model
+```
+<br />
+
+**Model performance** 
+
+```{r}
+performance::model_performance(IICV_incompatible_mod) %>% # extract model performance metrics 
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters** 
+
+```{r}
+IICV_incompatible_mod_params <- parameters::model_parameters(IICV_incompatible_mod) # obtain clean model parameters
+```
+
+```{r}
+parameters::print_html(IICV_incompatible_mod_params, include_reference = FALSE, caption = "Robust linear mixed-effects model estimates from analysis of intra-individual coefficient of variability in the incompatible flanker task condition", footer = "Note. The model was fitted using restricted maximum likelihood. N observations = 144. The intra-individual coeficient of variability was calculated as the standard deviation in reaction time divided by mean reaction time. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. SE = standard error. SWL = short-wavelength light. TST IIV = Intra-individual variability in total sleep time. TSTmean = mean total sleep time.", align = "left")
+```
+<br />
+
+## Intra-individual reaction time variability in the compatible (no conflict) flanker task condition 
+
+<br />
+**Model specification** 
+
+```{r, echo = TRUE}
+IIVRT_compatible_mod <- robustlmm::rlmer(IIVRT_compatible ~ MeanRT_compatible + Light + TST_IIV + TST_mean + (1 | Subject), data = Flanker_data) # fit robust linear mixed-effects model
+```
+<br />
+
+**Model performance** 
+
+```{r}
+performance::model_performance(IIVRT_compatible_mod) %>% # extract model performance metrics 
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters** 
+
+```{r}
+IIVRT_compatible_mod_params <- parameters::model_parameters(IIVRT_compatible_mod) # obtain clean model parameters 
+```
+
+```{r}
+parameters::print_html(IIVRT_compatible_mod_params, include_reference = FALSE, caption = "Robust linear mixed-effects model estimates from analysis of intra-individual reaction time variability in the compatible (no conflict) flanker task condition", footer = "Note. The model was fitted using restricted maximum likelihood. N observations = 144. Intra-individual reaction time variability was quantified as the intra-individual standard deviation in reaction time. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. RT = reaction time. SE = standard error. SWL = short-wavelength light. TST IIV = Intra-individual variability in total sleep time. TSTmean = mean total sleep time.", align = "left")
+```
+<br />
+
+**Approximated effect sizes**
+
+```{r}
+effectsize::cohens_f_squared(
+  IIVRT_compatible_mod_params,
+  partial = TRUE,
+  generalized = FALSE,
+  squared = TRUE,
+  ci = 0.95,
+  alternative = "two.sided",
+  verbose = FALSE
+  ) %>% 
+  interpret(rules = "cohen1992") %>% 
+  kableExtra::kable()
+```
+<br />
+
+**Partial correlations**
+
+```{r}
+Flanker_data %>% 
+  select(IIVRT_compatible, MeanRT_compatible) %>% 
+  correlation::cor_test("IIVRT_compatible", "MeanRT_compatible",
+                        partial = TRUE,
+                        missing = "keep.pairwise",
+                        method = "pearson")
+```
+
+```{r}
+Flanker_data %>% 
+  select(IIVRT_compatible, TST_IIV) %>% 
+  correlation::cor_test("IIVRT_compatible", "TST_IIV",
+                        partial = TRUE,
+                        missing = "keep.pairwise",
+                        method = "Spearman"
+                        )
+```
+<br />
+
+**Estimated marginal means for the main effect of light**
+
+```{r}
+emmeans_IIVRT_compatible_light <- emmeans::emmeans(IIVRT_compatible_mod, specs = ~ Light)
+emmeans_IIVRT_compatible_light_df <- summary(as.data.frame(emmeans_IIVRT_compatible_light))
+emmeans_IIVRT_compatible_light_df %>% kableExtra::kable()
+```
+<br />
+
+```{r, fig.align = 'left'}
+ggplot(emmeans_IIVRT_compatible_light_df, aes(x = Light, y = emmean, fill = Light)) +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, linewidth = 0.5) +
+  geom_point(aes(fill = Light), size = 4, color = "black", shape = 22, stroke = 0.5, show.legend = FALSE) +
+  scale_y_continuous(limits = c(105,140), breaks = seq(105, 135, by = 10)) +
+  scale_fill_manual(values = c("dimgrey", "blue", "red", "lightblue1")) +
+  scale_x_discrete(labels = c("DL", "SWL", "LWL", "BWL")) +
+  labs(
+    title = "The acute effect of light on intra-individual reaction time variability\nin the compatible (no conflict) flanker task condition",
+    x = "Light condition",
+    y = "RTV (ms) in the compatible\nflanker condition",
+    fill = "",
+    caption = "Model-based estimated marginal means for the main effect of light, with error bars\nrepresenting the 95% confidence interval. Intra-individual reaction time variability\n(RTV) was quantified as the standard deviation (SD) in RT on incompatible trials.\nAbbreviations: BWL = bright white light. LWL = long-wavelength light. ms =\nmilliseconds. SWL = short-wavelength light."
+    ) +
+  plot_theme_function_1() # apply custom theme function 
+```
+
+```{r, eval = FALSE}
+IIVRT_compatible_light_plot_publication <- ggplot(emmeans_IIVRT_compatible_light_df, aes(x = Light, y = emmean, fill = Light)) +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, size = 0.5) +
+  geom_point(aes(fill = Light), size = 4, color = "black", shape = 22, stroke = 0.5, show.legend = FALSE) +
+  scale_y_continuous(limits = c(105,160), breaks = seq(105, 155, by = 10)) + # upper limit defined as the same for other plots so that they can be compared visually in combined figure in the manuscript 
+  scale_fill_manual(values = c("dimgrey", "blue", "red", "lightblue1")) +
+  scale_x_discrete(labels = c("DL", "SWL", "LWL", "BWL")) +
+  labs(
+    x = "Light condition",
+    y = "RTV (ms) in the compatible\nflanker condition",
+    fill = "Light"
+    ) +
+  plot_theme_function_2()
+
+IIVRT_compatible_light_plot_publication
+```
+
+```{r, eval = FALSE}
+ggsave("IIVRT_compatible_light_plot.tiff",
+       plot = IIVRT_compatible_light_plot_publication,
+       device = "tiff",
+       width = 12,
+       height = 12,
+       units = "cm",
+       dpi = 600)
+```
+<br />
+
+### Robustness checks
+
+#### Sensitivity analysis of imputed values in outcome variable ("complete-case" analysis)
+
+<br />
+**Model specification** 
+
+```{r, echo = TRUE}
+IIVRT_compatible_mod_cc <- robustlmm::rlmer(IIVRT_compatible ~ MeanRT_compatible + Light + TST_IIV + TST_mean + (1 | Subject), data = Flanker_data_cc) # fit robust linear mixed-effects model
+```
+<br />
+
+**Model performance** 
+
+```{r}
+performance::model_performance(IIVRT_compatible_mod_cc) %>% # extract model performance metrics 
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters** 
+
+```{r}
+IIVRT_compatible_mod_cc_params <- parameters::model_parameters(IIVRT_compatible_mod_cc) # obtain clean model parameters
+```
+
+```{r}
+parameters::print_html(IIVRT_compatible_mod_cc_params, include_reference = FALSE, caption = "Robust linear mixed-effects model estimates from complete-case analysis of intra-individual reaction time variability in the compatible (no conflict) flanker task condition", footer = "Note. The model was fitted using restricted maximum likelihood. N observations = 142. Intra-individual reaction time variability was quantified as the intra-individual standard deviation in reaction time. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. RT = reaction time. SE = standard error. SWL = short-wavelength light. TST IIV = Intra-individual variability in total sleep time. TSTmean = mean total sleep time.", align = "left")
+```
+<br />
+
+## Conflict effect score 
+
+The conflict effect score ([Fan et al 2005](https://doi.org/10.1016/j.neuroimage.2005.02.004)) is given as:
+$$
+RTincompatible - RTcompatible
+$$
+**Model specification** 
+
+```{r, echo = TRUE}
+conflict_effect_mod <- robustlmm::rlmer(Conflict_effect_score ~ Light + TST_IIV + TST_mean + (1 | Subject), data = Flanker_data) # fit robust linear mixed-effects model
+```
+<br />
+
+**Model performance** 
+
+```{r}
+performance::model_performance(conflict_effect_mod) %>% # extract model performance metrics 
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters** 
+
+```{r}
+conflict_effect_mod_params <- parameters::model_parameters(conflict_effect_mod) # obtain clean model parameters 
+```
+
+```{r}
+parameters::print_html(conflict_effect_mod_params, include_reference = FALSE, caption = "Robust linear mixed-effects model estimates from analysis of conflict effect scores", footer = "Note. The model was fitted using restricted maximum likelihood. N observations = 144. Conflict effect scores were quantified as mean RT on incompatible trials minus mean RT on compatible trials. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. SE = standard error. SWL = short-wavelength light. TST IIV = Intra-individual variability in total sleep time. TSTmean = mean total sleep time.", align = "left")
+```
+<br />
+
+**Approximated effect sizes**
+
+```{r}
+effectsize::cohens_f_squared(
+  conflict_effect_mod_params,
+  partial = TRUE,
+  generalized = FALSE,
+  squared = TRUE,
+  ci = 0.95,
+  alternative = "two.sided",
+  verbose = FALSE
+  ) %>% 
+  interpret(rules = "cohen1992") %>% 
+  kableExtra::kable()
+```
+<br />
+
+**Partial correlations**
+
+```{r}
+Flanker_data %>% 
+  select(Conflict_effect_score, TST_IIV) %>% 
+  correlation::cor_test("Conflict_effect_score", "TST_IIV",
+                        partial = TRUE,
+                        missing = "keep.pairwise",
+                        method = "Spearman")
+```
+<br />
+
+**Estimated marginal means for the main effect of light**
+
+```{r}
+emmeans_conflict_effect_light <- emmeans(conflict_effect_mod, specs = ~ Light)
+emmeans_conflict_effect_light_df <- summary(as.data.frame(emmeans_conflict_effect_light))
+emmeans_conflict_effect_light_df %>% kableExtra::kable()
+```
+<br />
+
+```{r, fig.align = 'left'}
+ggplot(emmeans_conflict_effect_light_df, aes(x = Light, y = emmean, fill = Light)) +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, linewidth = 0.5) +
+  geom_point(aes(fill = Light), size = 4, color = "black", shape = 22, stroke = 0.5, show.legend = FALSE) +
+  scale_y_continuous(limits = c(70,125), breaks = seq(70, 120, by = 10)) +
+  scale_fill_manual(values = c("dimgrey", "blue", "red", "lightblue1")) +
+  scale_x_discrete(labels = c("DL", "SWL", "LWL", "BWL")) +
+  labs(
+    title = "The acute effect of light on conflict effect sores",
+    x = "Light condition",
+    y = "Conflict effect scores\n(RT incompatible - RT compatible)",
+    fill = "",
+    caption = "Model-based estimated marginal means for the main effect of light, with error bars\nrepresenting the 95% confidence interval. Conflict effect scores were obtained by\nsubtracting mean reaction time on compatible trials from mean reaction time on\nincompatible trials. Abbreviations: BWL = bright white light. LWL = long-wavelength\nlight. SWL = short-wavelength light."
+    ) +
+  plot_theme_function_1() # apply custom theme function 
+```
+
+```{r, eval = FALSE}
+conflict_effect_light_plot_publication <- ggplot(emmeans_conflict_effect_light_df, aes(x = Light, y = emmean, fill = Light)) +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, linewidth = 0.5) +
+  geom_point(aes(fill = Light), size = 4, color = "black", shape = 22, stroke = 0.5, show.legend = FALSE) +
+  scale_y_continuous(limits = c(70,125), breaks = seq(70, 120, by = 10)) +
+  scale_fill_manual(values = c("dimgrey", "blue", "red", "lightblue1")) +
+  scale_x_discrete(labels = c("DL", "SWL", "LWL", "BWL")) +
+  labs(
+    x = "Light condition",
+    y = "Differential incompatible-compatible\nRT score",
+    fill = "Light"
+    ) +
+  plot_theme_function_2()
+
+conflict_effect_light_plot_publication
+```
+
+```{r, eval = FALSE}
+ggsave("conflict_effect_light_plot.tiff",
+       plot = conflict_effect_light_plot_publication,
+       device = "tiff",
+       width = 12,
+       height = 12,
+       units = "cm",
+       dpi = 600)
+```
+<br />
+
+### Robustness checks
+
+#### Sensitivity analysis of imputed values in outcome variable ("complete-case" analysis)
+
+<br />
+**Model specification** 
+
+```{r, echo = TRUE}
+conflict_effect_mod_cc <- robustlmm::rlmer(Conflict_effect_score ~ Light + TST_IIV + TST_mean + (1 | Subject), data = Flanker_data_cc) # fit robust linear mixed-effects model
+```
+<br />
+
+**Model performance** 
+
+```{r}
+performance::model_performance(conflict_effect_mod_cc) %>%  # extract model performance metrics
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters** 
+
+```{r}
+conflict_effect_mod_cc_params <- parameters::model_parameters(conflict_effect_mod_cc) # obtain clean model parameters
+```
+
+```{r}
+parameters::print_html(conflict_effect_mod_cc_params, include_reference = FALSE, caption = "Robust linear mixed-effects model estimates from complete-case analysis of conflict effect scores", footer = "Note. The model was fitted using restricted maximum likelihood. N observations = 142. Conflict effect scores were quantified as mean RT on incompatible trials minus mean RT on compatible trials. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. SE = standard error. SWL = short-wavelength light. TST IIV = Intra-individual variability in total sleep time. TSTmean = mean total sleep time.", align = "left")
+```
+<br />
+
+# Statistical analyses of secondary outcomes from the Eriksen Flanker Task 
+
+## Mean reaction time in the incompatible (conflict) flanker task condition
+
+<br />
+**Model specification** 
+
+```{r, echo = TRUE}
+MeanRT_incompatible_mod <- robustlmm::rlmer(MeanRT_incompatible ~ Light + TST_IIV + TST_mean + (1 | Subject), data = Flanker_data) # fit robust linear mixed-effects model 
+```
+<br />
+
+**Model performance**
+
+```{r}
+performance::model_performance(MeanRT_incompatible_mod) %>% # extract model performance metrics
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters** 
+
+```{r}
+MeanRT_incompatible_mod_params <- parameters::model_parameters(MeanRT_incompatible_mod) # obtain clean model parameters
+```
+
+```{r}
+parameters::print_html(MeanRT_incompatible_mod_params, include_reference = FALSE, caption = "Robust linear mixed-effects model estimates from analysis of mean reaction time in the incompatible flanker task condition", footer = "Note. The model was fitted using restricted maximum likelihood. N observations = 144. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. SE = standard error. SWL = short-wavelength light. TST IIV = Intra-individual variability in total sleep time. TSTmean = mean total sleep time.", align = "left")
+```
+<br />
+
+**Partial correlations**
+
+```{r}
+Flanker_data %>% 
+  select(MeanRT_incompatible, TST_IIV) %>% 
+  correlation::cor_test("MeanRT_incompatible", "TST_IIV",
+                        partial = TRUE,
+                        missing = "keep.pairwise",
+                        method = "Spearman")
+```
+<br />
+
+### Robustness checks
+
+#### Sensitivity analysis of imputed values in outcome variable ("complete-case" analysis)
+
+<br />
+**Model specification** 
+
+```{r, echo = TRUE}
+MeanRT_incompatible_mod_cc <- robustlmm::rlmer(MeanRT_incompatible ~ Light + TST_IIV + TST_mean + (1 | Subject), data = Flanker_data_cc) # fit robust linear mixed-effects model 
+```
+<br />
+
+**Model performance** 
+
+```{r}
+performance::model_performance(MeanRT_incompatible_mod_cc) %>% # extract model performance metrics 
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters** 
+
+```{r}
+MeanRT_incompatible_mod_cc_params <- parameters::model_parameters(MeanRT_incompatible_mod_cc) # obtain clean model parameters
+```
+
+```{r}
+parameters::print_html(MeanRT_incompatible_mod_cc_params, include_reference = FALSE, caption = "Robust linear mixed-effects model estimates from complete-case analysis of mean reaction time in the incompatible flanker task condition", footer = "Note. The model was fitted using restricted maximum likelihood. N observations = 142. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. SE = standard error. SWL = short-wavelength light. TST IIV = Intra-individual variability in total sleep time. TSTmean = mean total sleep time.", align = "left")
+```
+<br />
+
+## Mean reaction time in the compatible (no conflict) flanker task condition
+
+<br />
+**Model specification** 
+
+```{r, echo = TRUE}
+MeanRT_compatible_mod <- robustlmm::rlmer(MeanRT_compatible ~ Light + TST_IIV + TST_mean + (1 | Subject), data = Flanker_data) # fit robust linear mixed-effects model 
+```
+<br />
+
+**Model performance** 
+
+```{r}
+performance::model_performance(MeanRT_compatible_mod) %>% # extract model performance metrics
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters** 
+
+```{r}
+MeanRT_compatible_mod_params <- parameters::model_parameters(MeanRT_compatible_mod) # obtain clean model parameters
+```
+
+```{r}
+parameters::print_html(MeanRT_compatible_mod_params, include_reference = FALSE, caption = "Robust linear mixed-effects model estimates from analysis of mean reaction time in the compatible (no conflict) flanker task condition", footer = "Note. The model was fitted using restricted maximum likelihood. N observations = 144. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. SE = standard error. SWL = short-wavelength light. TST IIV = Intra-individual variability in total sleep time. TSTmean = mean total sleep time.", align = "left")
+```
+<br />
+
+**Partial correlations**
+
+```{r}
+Flanker_data %>% 
+  select(MeanRT_compatible, TST_IIV) %>% 
+  correlation::cor_test("MeanRT_compatible", "TST_IIV",
+                        partial = TRUE,
+                        missing = "keep.pairwise",
+                        method = "Spearman")
+```
+<br />
+
+### Robustness checks
+
+#### Sensitivity analysis of imputed values in outcome variable ("complete-case" analysis)
+
+<br />
+**Model specification** 
+
+```{r, echo = TRUE}
+MeanRT_compatible_mod_cc <- robustlmm::rlmer(MeanRT_compatible ~ Light + TST_IIV + TST_mean + (1 | Subject), data = Flanker_data_cc) # fit robust linear mixed-effects model 
+```
+<br />
+
+**Model performance** 
+
+```{r}
+performance::model_performance(MeanRT_compatible_mod_cc) %>% # extract model performance metrics
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters** 
+
+```{r}
+MeanRT_compatible_mod_cc_params <- parameters::model_parameters(MeanRT_compatible_mod_cc) # obtain clean model parameters
+```
+
+```{r}
+parameters::print_html(MeanRT_compatible_mod_cc_params, include_reference = FALSE, caption = "Robust linear mixed-effects model estimates from complete-case analysis of mean reaction time in the compatible (no conflict) flanker task condition", footer = "Note. The model was fitted using restricted maximum likelihood. N observations = 142. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. SE = standard error. SWL = short-wavelength light. TST IIV = Intra-individual variability in total sleep time. TSTmean = mean total sleep time.", align = "left")
+```
+<br />
+
+## Mean accuracy in the incompatible (conflict) flanker task condition
+
+```{r}
+Flanker_data_glmm <- Flanker_data %>% 
+  mutate(
+    Accuracy_compatible = ifelse(Accuracy_compatible == 1, 1 - 0.00001, Accuracy_compatible), # subtract a small constant to accuracy values = 1 so that it can be modeled with beta regression
+    Accuracy_incompatible = ifelse(Accuracy_incompatible == 1, 1 - 0.00001, Accuracy_incompatible)
+    )
+```
+
+<br />
+**Model specification** 
+
+```{r, echo = TRUE}
+Accuracy_incompatible_mod <- glmmTMB::glmmTMB(Accuracy_incompatible ~ Light + TST_IIV + TST_mean + (1 | Subject), data = Flanker_data_glmm, family = beta_family(link = "logit")) # fit generalized linear-mixed effects model with a beta probability distribution and logit link function 
+```
+<br />
+
+**Model performance** 
+
+```{r}
+performance::model_performance(Accuracy_incompatible_mod) %>% # extract model performance metrics
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters** 
+
+```{r}
+Accuracy_incompatible_mod_params <- parameters::model_parameters(Accuracy_incompatible_mod, exponentiate = TRUE) # obtain clean model parameters
+```
+
+```{r}
+parameters::print_html(Accuracy_incompatible_mod_params, include_reference = FALSE, caption = "Generalized linear mixed-effects model estimates from analysis of mean accuracy in the incompatible flanker task condition", footer = "Note. The model was fitted with a beta probability distribution and a logit link function. N observations = 144. Coefficients, confidence intervals, and standard errors are exponentiated. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. SE = standard error. SWL = short-wavelength light. TST IIV = Intra-individual variability in total sleep time. TSTmean = mean total sleep time.", align = "left")
+```
+<br />
+
+**Partial correlations**
+
+```{r}
+Flanker_data_glmm %>% 
+  select(Accuracy_incompatible, TST_IIV) %>% 
+  correlation::cor_test("Accuracy_incompatible", "TST_IIV",
+                        partial = TRUE,
+                        missing = "keep.pairwise",
+                        method = "Spearman")
+```
+<br />
+
+### Robustness checks
+
+#### Sensitivity analysis of imputed values in outcome variable ("complete-case" analysis)
+
+```{r}
+Flanker_data_cc_glmm <- Flanker_data_cc %>% 
+  mutate(
+    Accuracy_compatible = ifelse(Accuracy_compatible == 1, 1 - 0.00001, Accuracy_compatible), # subtract a small constant to accuracy values = 1 so that it can be modeled with beta regression
+    Accuracy_incompatible = ifelse(Accuracy_incompatible == 1, 1 - 0.00001, Accuracy_incompatible) 
+    )
+```
+
+<br />
+**Model specification** 
+
+```{r, echo = TRUE}
+Accuracy_incompatible_mod_cc <- glmmTMB::glmmTMB(Accuracy_incompatible ~ Light + TST_IIV + TST_mean + (1 | Subject), data = Flanker_data_cc_glmm, family = beta_family(link = "logit")) # fit generalized linear-mixed effects model with a beta probability distribution and logit link function 
+```
+<br />
+
+**Model performance** 
+
+```{r}
+performance::model_performance(Accuracy_incompatible_mod_cc) %>% # extract model performance metrics 
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters** 
+
+```{r}
+Accuracy_incompatible_mod_cc_params <- parameters::model_parameters(Accuracy_incompatible_mod_cc, exponentiate = TRUE) # obtain clean model parameters
+```
+
+```{r}
+parameters::print_html(Accuracy_incompatible_mod_cc_params, include_reference = FALSE, caption = "Generalized linear mixed-effects model estimates from complete-case analysis of mean accuracy in the incompatible flanker task condition", footer = "Note. The model was fitted with a beta probability distribution and a logit link function. N observations = 142. Coefficients, confidence intervals, and standard errors are exponentiated. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. SE = standard error. SWL = short-wavelength light. TST IIV = Intra-individual variability in total sleep time. TSTmean = mean total sleep time.", align = "left")
+```
+<br />
+
+## Mean accuracy in the compatible (no conflict) flanker task condition
+
+<br />
+**Model specification** 
+
+```{r, echo = TRUE}
+Accuracy_compatible_mod <- glmmTMB::glmmTMB(Accuracy_compatible ~ Light + TST_IIV + TST_mean + (1 | Subject), data = Flanker_data_glmm, family = beta_family(link = "logit")) # fit generalized linear-mixed effects model with a beta probability distribution and logit link function 
+```
+<br />
+
+**Model performance** 
+
+```{r}
+performance::model_performance(Accuracy_compatible_mod) %>% # extract model performance metrics
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters** 
+
+```{r}
+Accuracy_compatible_mod_params <- parameters::model_parameters(Accuracy_compatible_mod, exponentiate = TRUE) # obtain clean model parameters
+```
+
+```{r}
+parameters::print_html(Accuracy_compatible_mod_params, include_reference = FALSE, caption = "Generalized linear mixed-effects model estimates from analysis of mean accuracy in the compatible (no conflict) flanker task condition", footer = "Note. The model was fitted with a beta probability distribution and a logit link function. N observations = 144. Coefficients, confidence intervals, and standard errors are exponentiated. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. SE = standard error. SWL = short-wavelength light. TST IIV = Intra-individual variability in total sleep time. TSTmean = mean total sleep time.", align = "left")
+```
+<br />
+
+```{r, echo = TRUE}
+Accuracy_compatible_mod_2 <- GLMMadaptive::mixed_model(fixed = Accuracy_compatible ~ Light + TST_IIV + TST_mean, random = ~  1 | Subject, data = Flanker_data_glmm, family = beta.fam(), iter_EM = 0) # as the returned conditional R^2 from the original model did not account for random effect variances, extract marginal and conditional R^2 with the GLMMAdaptive package using adaptive gausian quadrature
+```
+<br />
+
+**GLMMAdaptive model performance** 
+
+```{r}
+performance::model_performance(Accuracy_compatible_mod_2) %>% # extract model performance metrics
+  kableExtra::kable() 
+```
+<br />
+
+**Partial correlations**
+
+```{r}
+Flanker_data_glmm %>% 
+  select(Accuracy_compatible, TST_IIV) %>% 
+  correlation::cor_test("Accuracy_compatible", "TST_IIV",
+                        partial = TRUE,
+                        missing = "keep.pairwise",
+                        method = "Spearman")
+```
+<br />
+
+### Robustness checks
+
+#### Sensitivity analysis of imputed values in outcome variable ("complete-case" analysis)
+
+<br />
+**Model specification** 
+
+```{r, echo = TRUE}
+Accuracy_compatible_mod_cc <- glmmTMB::glmmTMB(Accuracy_compatible ~ Light + TST_IIV + TST_mean + (1 | Subject), data = Flanker_data_cc_glmm, family = beta_family(link = "logit")) # fit generalized linear-mixed effects model with a beta probability distribution and logit link function 
+```
+<br />
+
+**Model performance** 
+
+```{r}
+performance::model_performance(Accuracy_compatible_mod_cc) %>% # extract model performance metrics
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters** 
+
+```{r}
+Accuracy_compatible_mod_cc_params <- parameters::model_parameters(Accuracy_compatible_mod_cc, exponentiate = TRUE) # obtain clean model parameters
+```
+
+```{r}
+parameters::print_html(Accuracy_compatible_mod_cc_params, include_reference = FALSE, caption = "Generalized linear mixed-effects model estimates from complete-case analysis of mean accuracy in the compatible (no conflict) flanker task condition", footer = "Note. The model was fitted with a beta probability distribution and a logit link function. N observations = 142. Coefficients, confidence intervals, and standard errors are exponentiated. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. SE = standard error. SWL = short-wavelength light. TST IIV = Intra-individual variability in total sleep time. TSTmean = mean total sleep time.", align = "left")
+```
+<br />
+
+**GLMMadaptive model performance** 
+
+```{r, echo = TRUE}
+Accuracy_compatible_mod_cc_2 <- GLMMadaptive::mixed_model(fixed = Accuracy_compatible ~ Light + TST_IIV + TST_mean, random = ~  1 | Subject, data = Flanker_data_cc_glmm, family = beta.fam(), iter_EM = 0) # as the returned conditional R^2 from the glmmTMB model did not account for random effect variances, fit a generalized linear mixed-effects model using adaptive gaussian quadrature to obtain marginal and conditional R^2 
+```
+<br />
+
+```{r}
+performance::model_performance(Accuracy_compatible_mod_cc_2) %>% # extract model performance metrics 
+  kableExtra::kable()
+```
+<br />
+
+# Estimates from "crude" models
+
+***THE ACUTE EFFECTS OF LIGHT ON ERIKSEN FLANKER TASK OUTCOMES, UNADJUSTED FOR POTENTIAL CONFOUNDERS***
+
+## Intra-individual reaction time variability in the incompatible (conflict) task condition
+
+<br />
+**Model specification** 
+
+```{r, echo = TRUE}
+IIVRT_incompatible_mod_crude <- robustlmm::rlmer(IIVRT_incompatible ~ MeanRT_incompatible + Light + (1 | Subject), data = Flanker_data) # fit robust linear mixed-effects model
+```
+<br />
+
+**Model performance** 
+
+```{r}
+performance::model_performance(IIVRT_incompatible_mod_crude) %>% # extract model performance metrics 
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters**
+
+```{r}
+IIVRT_incompatible_mod_crude_params <- parameters::model_parameters(IIVRT_incompatible_mod_crude) # obtain clean model parameters 
+```
+
+```{r}
+parameters::print_html(IIVRT_incompatible_mod_crude_params, include_reference = FALSE, caption = "Robust linear mixed-effects model estimates from complete-case analysis of intra-individual reaction time variability in the incompatible flanker task condition", footer = "Note. The model was fitted using restricted maximum likelihood and are unadjusted for confounders (intra-individual variability in total sleep time and mean total sleep time), except for mean reaction time to account for the typically high correlation among the two. N observations = 144. Intra-individual reaction time variability was quantified as the intra-individual standard deviation in reaction time. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. RT = reaction time. SE = standard error. SWL = short-wavelength light.", align = "left")
+```
+<br />
+
+## Intra-individual reaction time variability in the compatible (no conflict) task condition
+
+<br />
+**Model specification** 
+
+```{r, echo = TRUE}
+IIVRT_compatible_mod_crude <- robustlmm::rlmer(IIVRT_compatible ~ MeanRT_compatible + Light + (1 | Subject), data = Flanker_data) # fit robust linear mixed-effects model
+```
+<br />
+
+**Model performance** 
+
+```{r}
+performance::model_performance(IIVRT_compatible_mod_crude) %>% # extract model performance metrics 
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters**
+
+```{r}
+IIVRT_compatible_mod_crude_params <- parameters::model_parameters(IIVRT_compatible_mod_crude) # obtain clean model parameters 
+```
+
+```{r}
+parameters::print_html(IIVRT_compatible_mod_crude_params, include_reference = FALSE, caption = "Robust linear mixed-effects model estimates from analysis of intra-individual reaction time variability in the compatible (no conflict) flanker task condition", footer = "Note. The model was fitted using restricted maximum likelihood and are unadjusted for confounders (intra-individual variability in total sleep time and mean total sleep time), except for mean reaction time to account for the typically high correlation among the two. N observations = 144. Intra-individual reaction time variability was quantified as the intra-individual standard deviation in reaction time. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. RT = reaction time. SE = standard error. SWL = short-wavelength light.", align = "left")
+```
+<br />
+
+## Conflict effect score 
+
+<br />
+**Model specfication**
+
+```{r, echo = TRUE}
+conflict_effect_mod_crude <- robustlmm::rlmer(Conflict_effect_score ~ Light + (1 | Subject), data = Flanker_data) # fit robust linear mixed-effects model
+```
+<br />
+
+**Model performance**
+
+```{r}
+performance::model_performance(conflict_effect_mod_crude) %>% # extract model performance metrics 
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters** 
+
+```{r}
+conflict_effect_mod_crude_params <- parameters::model_parameters(conflict_effect_mod_crude) # obtain clean model parameters 
+```
+
+```{r}
+parameters::print_html(conflict_effect_mod_crude_params, include_reference = FALSE, caption = "Robust linear mixed-effects model estimates from analysis of conflict effect scores", footer = "Note. The model was fitted using restricted maximum likelihood and are unadjusted for confounders (intra-individual variability in total sleep time and mean total sleep time). N observations = 144. Conflict effect scores were quantified as mean RT on incompatible trials minus mean RT on compatible trials. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. SE = standard error. SWL = short-wavelength light.", align = "left")
+```
+<br />
+
+## Mean reaction time in the incompatible (conflict) flanker task condition
+
+<br />
+**Model specification**
+
+```{r, echo = TRUE}
+MeanRT_incompatible_mod_crude <- robustlmm::rlmer(MeanRT_incompatible ~ Light + (1 | Subject), data = Flanker_data) # fit robust linear mixed-effects model 
+```
+<br />
+
+**Model performance**
+
+```{r}
+performance::model_performance(MeanRT_incompatible_mod_crude) %>% # extract model performance metrics 
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters** 
+
+```{r}
+MeanRT_incompatible_mod_crude_params <- parameters::model_parameters(MeanRT_incompatible_mod_crude) # obtain model parameters
+```
+
+```{r}
+parameters::print_html(MeanRT_incompatible_mod_crude_params, include_reference = FALSE, caption = "Robust linear mixed-effects model estimates from analysis of mean reaction time in the incompatible flanker task condition", footer = "Note. The model was fitted using restricted maximum likelihood and are unadjusted for confounders (intra-individual variability in total sleep time and mean total sleep time). N observations = 144. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. RT = reaction time. SE = standard error. SWL = short-wavelength light.", align = "left")
+```
+<br />
+
+## Mean reaction time in the compatible (no conflict) flanker task condition
+
+<br />
+**Model specification** 
+
+```{r, echo = TRUE}
+MeanRT_compatible_mod_crude <- robustlmm::rlmer(MeanRT_compatible ~ Light + (1 | Subject), data = Flanker_data) # fit robust linear mixed-effects model 
+```
+<br />
+
+**Model performance** 
+
+```{r}
+performance::model_performance(MeanRT_incompatible_mod_crude) %>% # extract model performance metrics 
+  kableExtra::kable()
+```
+<br />
+
+
+**Model parameters** 
+
+```{r}
+MeanRT_compatible_mod_crude_params <- parameters::model_parameters(MeanRT_compatible_mod_crude) # obtain model parameters
+```
+
+```{r}
+parameters::print_html(MeanRT_compatible_mod_crude_params, include_reference = FALSE, caption = "Robust linear mixed-effects model estimates from analysis of mean reaction time in the incompatible flanker task condition", footer = "Note. The model was fitted using restricted maximum likelihood and are unadjusted for confounders (intra-individual variability in total sleep time and mean total sleep time). N observations = 144. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. RT = reaction time. SE = standard error. SWL = short-wavelength light.", align = "left")
+```
+<br />
+
+## Mean accuracy in the incompatible (conflict) flanker task condition
+
+<br />
+**Model specification** 
+
+```{r, echo = TRUE}
+Accuracy_incompatible_mod_crude <- glmmTMB::glmmTMB(Accuracy_incompatible ~ Light + (1 | Subject), data = Flanker_data_glmm, family = beta_family(link = "logit")) # fit generalized linear-mixed effects model with a beta probability distribution and logit link function 
+```
+<br />
+
+**Model performance** 
+
+```{r}
+performance::model_performance(Accuracy_incompatible_mod_crude) %>% # extract model performance metrics
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters** 
+
+```{r}
+Accuracy_incompatible_mod_crude_params <- parameters::model_parameters(Accuracy_incompatible_mod_crude, exponentiate = TRUE) # obtain clean model parameters 
+```
+
+```{r}
+parameters::print_html(Accuracy_incompatible_mod_params, include_reference = FALSE, caption = "Generalized linear mixed-effects model estimates from analysis of mean accuracy in the incompatible flanker task condition", footer = "Note. The model was fitted with a beta probability distribution and a logit link function, and are unadjusted for confounders (intra-individual variability in total sleep time and mean total sleep time). N observations = 144. Coefficients, confidence intervals, and standard errors are exponentiated. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. SE = standard error. SWL = short-wavelength light.", align = "left")
+```
+<br />
+
+## Mean accuracy in the compatible (no conflict) flanker task condition
+
+<br />
+**Model specification** 
+
+```{r, echo = TRUE}
+Accuracy_compatible_mod_crude <- glmmTMB::glmmTMB(Accuracy_compatible ~ Light + (1 | Subject), data = Flanker_data_glmm, family = beta_family(link = "logit")) # fit generalized linear-mixed effects model with a beta probability distribution and logit link function 
+```
+<br />
+
+**Model performance** 
+
+```{r}
+performance::model_performance(Accuracy_compatible_mod_crude ) %>% # extract model performance metrics 
+  kableExtra::kable()
+```
+<br />
+
+**Model parameters** 
+
+```{r}
+Accuracy_compatible_mod_crude_params <- parameters::model_parameters(Accuracy_compatible_mod_crude, exponentiate = TRUE)
+```
+
+```{r}
+parameters::print_html(Accuracy_compatible_mod_params, include_reference = FALSE, caption = "Generalized linear mixed-effects model estimates from analysis of mean accuracy in the compatible flanker task condition", footer = "Note. The model was fitted with a beta probability distribution and a logit link function, and are unadjusted for confounders (intra-individual variability in total sleep time and mean total sleep time). N observations = 144. Coefficients, confidence intervals, and standard errors are exponentiated. Abbreviations: BWL = bright white light. CI = confidence interval. LWL = long-wavelength light. SE = standard error. SWL = short-wavelength light.", align = "left")
+```
+<br />

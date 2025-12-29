@@ -3,7 +3,7 @@ This repository contains data (**EFT_dataset.csv**, **EFT_dataset_sensitivityana
 Spectral irradiance in each light condition (**spectral_irradiance_rawdata.csv**) was measured at eye level.
 ## Description and licensing 
 ### Dataset
-The primary imputed dataset (**EFT_dataset.csv**) as well as the dataset used for sensitivity "complet-case" analyses (imputed covariates, non-imputed outcomes, i.e., with "NA" inserted for missing observations) are licensed under [CC-BY-NC-4.0](https://creativecommons.org/licenses/by-nc/4.0/). The datasets contain the folllowing variables (from left to right): 
+The primary imputed dataset (**EFT_dataset.csv**) as well as the dataset used for sensitivity "complete-case" analyses (imputed covariates, non-imputed outcomes, i.e., with "NA" inserted for missing observations) are licensed under [CC-BY-NC-4.0](https://creativecommons.org/licenses/by-nc/4.0/). The datasets contain the folllowing variables (from left to right): 
 - Subject [*integer*]: pseudonymized random four-digit identifier
 - Light [*factor*]: the experimental manipulation, a categorical variable with four levels: DL (white dim light), SWL (short-wavelength light), LWL (long-wavelength light), BWL (bright white light)
 - TST_IIV [*numeric*]: intra-individual variability in total sleep time (in minutes), quantified as the standard deviation in total sleep time across a period of 10 days during data collection

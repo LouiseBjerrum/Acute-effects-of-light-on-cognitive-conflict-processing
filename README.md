@@ -1,5 +1,6 @@
 # Acute effects of artificial light on cognitive conflict processing 
-This repository contains data (**EFT_dataset.csv**, **EFT_dataset_sensitivityanalyses.csv**), analysis code (**statistical_analyses_EFT.Rmd**) and associated output (**statistical_analyses_EFT.html**) associated with a scientific paper (Bjerrum et al., submitted) exploring the acute effects of exposure to artifiical light on measures of cognitive control derived from an arrow version of the Eriksen Flanker Task. Spectral irradiance in each light condition (**spectral_irradiance_rawdata.csv**) was measured at eye level.
+This repository contains data (**EFT_dataset.csv**, **EFT_dataset_sensitivityanalyses.csv**), analysis code (**statistical_analyses_EFT.Rmd**) and associated output (**statistical_analyses_EFT.html**) associated with a scientific paper (Bjerrum et al., submitted) exploring the acute effects of exposure to artifiical light on measures of cognitive control derived from an arrow version of the Eriksen Flanker Task.
+Spectral irradiance in each light condition (**spectral_irradiance_rawdata.csv**) was measured at eye level.
 ## Description and licensing 
 ### Dataset
 The primary imputed dataset (**EFT_dataset.csv**) as well as the dataset used for sensitivity "complet-case" analyses (imputed covariates, non-imputed outcomes, i.e., with "NA" inserted for missing observations) are licensed under [CC-BY-NC-4.0](https://creativecommons.org/licenses/by-nc/4.0/). The datasets contain the folllowing variables (from left to right): 
@@ -18,6 +19,8 @@ The primary imputed dataset (**EFT_dataset.csv**) as well as the dataset used fo
 - Accuracy_compatible [*numeric*]: mean accuracy (proportion) in the compatible flanker task condition
 - Accuracy_incompatible [*numeric*]: mean accuracy (proportion) in the incompatible flanker task condition
 ### Analysis script 
-The .Rmd file (**statistical_analyses_EFT.Rmd**) in this repository is licensed under [MIT License](https://choosealicense.com/licenses/mit/) documents the statistical analysis of the aggregated outcome measures from the flanker task. All outcomes were analyzed with mixed models in R. The .html file (**statistical_analyses_EFT.html**) is the resulting output from the knitted .Rmd file. 
+The .Rmd file (**statistical_analyses_EFT.Rmd**) in this repository is licensed under [MIT License](https://choosealicense.com/licenses/mit/) documents the statistical analysis of the aggregated outcome measures from the flanker task.
+All outcomes were analyzed with mixed models in R.
+The file (**statistical_analyses_EFT.html**) is the resulting output from the knitted .Rmd file. 
 ## Contact
 Please contact the first author at louise.bjerrum92@gmail.com for any questions regarding dataset or code.
